@@ -12,41 +12,56 @@ st.markdown("<h4 style='text-align: center; color: gray;'>RightShip, PSC ve Flag
 
 st.divider()
 
-# --- 2. GEMİ VERİTABANI ---
-# İleride bu kısmı Google Sheets CSV linki ile değiştireceğiz.
-gemi_verileri = [
-    {"Grup": "Spark", "Gemi Adı": "Beam", "Bayrak": "Barbados", "Email": "beam@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "GIFT", "Bayrak": "Barbados", "Email": "gift@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "just", "Bayrak": "Panama", "Email": "just@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "IDON", "Bayrak": "Barbados", "Email": "idon@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "Kronos", "Bayrak": "Barbados", "Email": "kronos@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "April", "Bayrak": "Antigua & Barbuda", "Email": "april@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "flat", "Bayrak": "Barbados", "Email": "flat@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "canal", "Bayrak": "Barbados", "Email": "canal@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "comet", "Bayrak": "Barbados", "Email": "comet@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "dali", "Bayrak": "Barbados", "Email": "dali@vesselsat.com"},
-    {"Grup": "Spark", "Gemi Adı": "Dodo", "Bayrak": "Panama", "Email": "dodo@skyfile.com"},
-    {"Grup": "Spark", "Gemi Adı": "dream", "Bayrak": "Barbados", "Email": "dream@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "faun", "Bayrak": "Barbados", "Email": "faun@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "laker", "Bayrak": "Panama", "Email": "laker@infinitymail.eu"},
-    {"Grup": "Spark", "Gemi Adı": "ares", "Bayrak": "Panama", "Email": "mvares@skyfile.com"},
-    {"Grup": "Aqmaris", "Gemi Adı": "Zeynep", "Bayrak": "Barbados", "Email": "zeynep@infinitymail.eu"},
-    {"Grup": "Aqmaris", "Gemi Adı": "Emine", "Bayrak": "Panama", "Email": "emine@infinitymail.eu"}
-]
+# --- 2. VERİTABANI (CSV'DEN OKUMA) ---
+@st.cache_data
+def verileri_yukle():
+    try:
+        # CSV dosyasını okuyoruz. Gemi isimlerinin büyük/küçük harfi dosyadan geldiği gibi korunur.
+        df = pd.read_csv("Spark Fleet _ Status.xlsx - STATUS.csv")
+        # Sütun isimlerinin başındaki ve sonundaki boşlukları temizleriz (hata almamak için)
+        df.columns = df.columns.str.strip()
+        return df
+    except FileNotFoundError:
+        st.error("🚨 'Spark Fleet _ Status.xlsx - STATUS.csv' dosyası bulunamadı! Lütfen dosyayı kod ile aynı klasöre koyun.")
+        return pd.DataFrame()
 
-df = pd.DataFrame(gemi_verileri)
+df = verileri_yukle()
+
+# Eğer dosya okunamazsa programın çökmemesi için kontrol ekliyoruz
+if df.empty:
+    st.warning("Lütfen veri dosyanızı klasöre ekleyip sayfayı yenileyin.")
+    st.stop()
+
+# --- SÜTUN İSİMLERİ EŞLEŞTİRMESİ ---
+# Excel'deki sütun isimleriniz farklıysa buradaki tırnak içindeki yazıları Excel'deki başlıklara göre değiştirebilirsiniz.
+KOLON_GEMI_ADI = "Vessel Name" if "Vessel Name" in df.columns else df.columns[0]
+KOLON_BAYRAK = "Flag" if "Flag" in df.columns else "Bayrak"
+KOLON_GRUP = "Group" if "Group" in df.columns else "Grup"
 
 # --- 3. KULLANICI ARAYÜZÜ ---
 sol_kolon, sag_kolon = st.columns([1, 2])
 
 with sol_kolon:
     st.subheader("📋 Gemi Seçimi")
-    secilen_gemi = st.selectbox("İşlem yapmak istediğiniz gemiyi seçin:", df["Gemi Adı"])
-    gemi_bilgisi = df[df["Gemi Adı"] == secilen_gemi].iloc[0]
+    # Dosyadaki orijinal büyük/küçük harfleriyle listeliyoruz
+    secilen_gemi = st.selectbox("İşlem yapmak istediğiniz gemiyi seçin:", df[KOLON_GEMI_ADI])
+    gemi_bilgisi = df[df[KOLON_GEMI_ADI] == secilen_gemi].iloc[0]
     
-    st.info(f"**Grup:** {gemi_bilgisi['Grup']} \n\n"
-            f"**Bayrak:** {gemi_bilgisi['Bayrak']} \n\n"
-            f"**E-Posta:** {gemi_bilgisi['Email']}")
+    # İstenilen ekstra parametreleri güvenli bir şekilde (sütun yoksa 'Bilgi Yok' yazacak şekilde) çekiyoruz
+    imo_no = gemi_bilgisi.get("IMO", gemi_bilgisi.get("IMO No", "Bilgi Yok"))
+    call_sign = gemi_bilgisi.get("Call Sign", "Bilgi Yok")
+    class_info = gemi_bilgisi.get("Class", "Bilgi Yok")
+    personel_info = gemi_bilgisi.get("PIC", gemi_bilgisi.get("Personel", "Bilgi Yok"))
+    bayrak = gemi_bilgisi.get(KOLON_BAYRAK, "Bilgi Yok")
+    grup = gemi_bilgisi.get(KOLON_GRUP, "Bilgi Yok")
+    
+    st.markdown("### 🚢 Gemi Kartı Detayları")
+    st.info(f"**Grup:** {grup} \n\n"
+            f"**Bayrak:** {bayrak} \n\n"
+            f"**IMO No:** {imo_no} \n\n"
+            f"**Call Sign:** {call_sign} \n\n"
+            f"**Class (Klas):** {class_info} \n\n"
+            f"**İlgili Personel (PIC):** {personel_info}")
 
 with sag_kolon:
     st.subheader(f"⚙️ {secilen_gemi} İçin Operasyonlar")
@@ -82,10 +97,10 @@ with sag_kolon:
     # --- FLAG STATE SEKMESİ ---
     with tab2:
         st.markdown("### 🏳️ Flag State Inspection (FSI) Penceresi")
-        bayrak = gemi_bilgisi['Bayrak']
         uygun_bayraklar = ["Barbados", "Panama", "Antigua & Barbuda"]
         
-        if bayrak in uygun_bayraklar:
+        # Bayrak metnini kontrol ederken büyük/küçük harf duyarlılığını ortadan kaldırıyoruz
+        if str(bayrak).strip().title() in [b.title() for b in uygun_bayraklar]:
             st.info(f"Bu gemi **{bayrak}** bayraklı olduğu için ±3 ay kuralına (Pencere sistemine) tabidir.")
             
             fsi_due_date = st.date_input("FSI Hedef Tarihini (Due Date) Giriniz:", key="fsi_date")
@@ -146,7 +161,7 @@ with sag_kolon:
                 bulunan_madde_sayisi = st.number_input("Madde Sayısı:", min_value=0, max_value=100, value=0, step=1)
                 
                 # BARBADOS KURALI KONTROLÜ
-                if bulunan_madde_sayisi >= 4 and gemi_bilgisi['Bayrak'] == "Barbados":
+                if bulunan_madde_sayisi >= 4 and str(bayrak).strip().title() == "Barbados":
                     st.error(f"🚨 KURAL İHLALİ TETİKLENDİ! {secilen_gemi} gemisi Barbados bayraklı ve PSC'den {bulunan_madde_sayisi} madde aldı.")
                     st.warning("Bu durum standart ±3 aylık FSI kuralını geçersiz kılar. Lütfen aşağıdaki 'Additional Flag State Inspection' tarihini giriniz.")
                     
@@ -164,5 +179,6 @@ with sag_kolon:
 
 # --- ALT TABLO ---
 st.divider()
-st.subheader("Tüm Filo Listesi")
-st.dataframe(df, use_container_width=True)
+st.subheader("Tüm Filo Listesi (CSV Verisi)")
+# Tabloyu ekranda gösterirken index'i gizliyoruz ki temiz görünsün
+st.dataframe(df, use_container_width=True, hide_index=True)
