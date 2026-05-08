@@ -9,23 +9,9 @@ st.set_page_config(page_title="Filo Yönetim Merkezi", layout="wide")
 # Logoları ve Başlığı yan yana dizmek için kolonlar oluşturuyoruz
 col1, col2, col3 = st.columns([1, 2, 1])
 
-with col1:
-    # SPARK logosu (Senin yüklediğin dosya adıyla)
-    try:
-        st.image("Spark logo.jpeg", width=250)
-    except FileNotFoundError:
-        st.error("Spark logo.jpeg dosyası bulunamadı. Lütfen kodla aynı klasöre koyun.")
-
 with col2:
     st.markdown("<h1 style='text-align: center;'>ORTAK OPERASYON MERKEZİ</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center;'>RightShip, PSC ve Flag State Takip Sistemi</p>", unsafe_allow_html=True)
-
-with col3:
-    # AQMARIS logosu (Senin yüklediğin dosya adıyla)
-    try:
-        st.image("image_53b0e3.png", width=150)
-    except FileNotFoundError:
-        st.error("image_53b0e3.png dosyası bulunamadı. Lütfen kodla aynı klasöre koyun.")
 
 st.divider() # Araya bir çizgi çekiyoruz
 
