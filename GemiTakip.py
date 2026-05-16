@@ -17,7 +17,7 @@ st.divider()
 def verileri_yukle():
     try:
         # CSV dosyasını okuyoruz. Gemi isimlerinin büyük/küçük harfi dosyadan geldiği gibi korunur.
-        df = pd.read_csv("Spark Fleet _ Status.xlsx - STATUS.csv")
+        df = pd.read_csv("spark.csv")
         # Sütun isimlerinin başındaki ve sonundaki boşlukları temizleriz (hata almamak için)
         df.columns = df.columns.str.strip()
         return df
